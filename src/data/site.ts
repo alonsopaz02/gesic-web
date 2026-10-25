@@ -63,15 +63,15 @@ export const pillars: {
 
 // Cifras animadas de "Nosotros". Reemplaza o agrega cifras reales (p. ej. condominios administrados).
 export const stats: { value: number; prefix?: string; suffix?: string; label: string }[] = [
-  { value: 15, prefix: '+', suffix: ' años', label: 'liderando operaciones críticas en empresas de primer nivel' },
+  { value: 20, prefix: '+', suffix: ' años', label: 'liderando operaciones críticas en empresas de primer nivel' },
   { value: 4, label: 'frentes de gestión en un solo equipo' },
   { value: 0, prefix: 'S/ ', label: 'costo del diagnóstico inicial' },
 ]
 
 export const results = [
   { title: 'Reducción de morosidad', text: 'Reportes financieros claros para la junta.', image: '/images/gesic/resultado-reportes.jpg' },
-  { title: 'Tableros eléctricos', text: 'Mantenimiento preventivo de instalaciones.', image: '/images/gesic/resultado-tableros.jpg' },
-  { title: 'Junta Directiva inscrita', text: 'Formalización ante SUNARP.', image: '/images/gesic/resultado-junta.jpg' },
+  { title: 'Mantenimiento de equipos', text: 'Mantenimiento preventivo de instalaciones.', image: '/images/gesic/resultado-tableros.jpg' },
+  { title: 'Inscripción de juntas directivas', text: 'Formalización ante SUNARP.', image: '/images/gesic/resultado-junta.jpg' },
   { title: 'Áreas verdes e iluminación', text: 'Espacios comunes recuperados.', image: '/images/gesic/resultado-areas-verdes.jpg' },
 ]
 
@@ -84,7 +84,7 @@ export const processSteps = [
 
 export const team = [
   {
-    name: 'Humberto Ura',
+    name: 'Humberto',
     role: 'Gerente General',
     bio: 'Abogado especializado en propiedad horizontal, formalización ante SUNARP y recuperación de morosidad. Exdirectivo de gestión residencial.',
     photo: '/images/gesic/humberto-ura.jpg',
@@ -112,7 +112,7 @@ export const phones = {
   callHref: '+51989105038',
 }
 
-// Formulario de contacto: los mensajes llegan a este correo vía FormSubmit (gratis, sin servidor).
+// Formulario de contacto: los mensajes llegan a este correo vía FormSubmit (sin costo, sin servidor).
 // La PRIMERA vez que alguien envíe el formulario, FormSubmit mandará un correo de activación
 // a esta dirección: hay que abrirlo y confirmar. Desde ahí, todos los mensajes llegan directo.
 export const contactEndpoint = 'https://formsubmit.co/ajax/comercial@gesicperu.com'
@@ -122,7 +122,7 @@ export const founders = {
   intro:
     'En GESIC Perú fusionamos los más altos estándares de gestión operativa del sector corporativo e industrial con un riguroso marco de cumplimiento legal.',
   detail:
-    'Nuestro equipo directivo suma más de 15 años liderando operaciones críticas en empresas de primer nivel, con sólida especialización en derecho inmobiliario y corporativo.',
+    'Nuestro equipo directivo suma más de 20 años liderando operaciones críticas en empresas de primer nivel, con sólida especialización en derecho inmobiliario y corporativo.',
   strengths: [
     {
       icon: 'operations' as const,

@@ -17,12 +17,13 @@ const wrap = 'mx-auto w-full max-w-7xl px-5 md:px-8'
 
 /* ───────────────────────── Animación al hacer scroll ───────────────────────── */
 
-function useInView<T extends Element>(threshold = 0.15) {
+function useInView<T extends Element>(threshold = 0.15, immediate = false) {
   const ref = useRef<T | null>(null)
   const [inView, setInView] = useState(false)
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    if (immediate) { const id = requestAnimationFrame(() => setInView(true)); return () => cancelAnimationFrame(id) }
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduce || !('IntersectionObserver' in window)) { setInView(true); return }
     const io = new IntersectionObserver(([entry]) => {
@@ -30,14 +31,14 @@ function useInView<T extends Element>(threshold = 0.15) {
     }, { threshold, rootMargin: '0px 0px -60px 0px' })
     io.observe(el)
     return () => io.disconnect()
-  }, [threshold])
+  }, [threshold, immediate])
   return { ref, inView }
 }
 
-type RevealProps = { children: ReactNode; delay?: number; className?: string; from?: 'up' | 'left' | 'right' | 'zoom' }
+type RevealProps = { children: ReactNode; delay?: number; className?: string; from?: 'up' | 'left' | 'right' | 'zoom'; immediate?: boolean }
 
-function Reveal({ children, delay = 0, className = '', from = 'up' }: RevealProps) {
-  const { ref, inView } = useInView<HTMLDivElement>()
+function Reveal({ children, delay = 0, className = '', from = 'up', immediate = false }: RevealProps) {
+  const { ref, inView } = useInView<HTMLDivElement>(0.15, immediate)
   const hidden = { up: 'translate-y-10', left: '-translate-x-12', right: 'translate-x-12', zoom: 'scale-95' }[from]
   return (
     <div
@@ -110,32 +111,33 @@ const navLinks = [
   ['Nosotros', '#nosotros'], ['Servicios', '#servicios'], ['Resultados', '#resultados'], ['Trayectoria', '#equipo'], ['Contacto', '#contacto'],
 ] as const
 
+const HEADER_H = 80 // alto del header (h-20) para alinear las secciones al navegar
+
 function Header() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40)
+    const onScroll = () => setScrolled(window.scrollY > 10)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-  const solid = scrolled || open
 
   return (
-    <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${solid ? 'bg-white/95 shadow-[0_8px_30px_rgba(20,40,75,0.08)] backdrop-blur-md' : 'bg-transparent'}`}>
+    <header className={`fixed inset-x-0 top-0 z-50 bg-white transition-shadow duration-300 ${scrolled || open ? 'shadow-[0_8px_30px_rgba(20,40,75,0.10)]' : 'border-b border-slate-100'}`}>
       <div className={`${wrap} flex h-20 items-center justify-between`}>
-        <Logo light={!solid} />
+        <Logo />
         <nav className="hidden items-center gap-8 lg:flex" aria-label="Navegación principal">
           {navLinks.map(([label, href]) => (
-            <a key={href} href={href} className={`group relative text-[15px] font-semibold transition-colors ${solid ? 'text-brand-ink hover:text-brand-blue' : 'text-white/85 hover:text-white'}`}>
+            <a key={href} href={href} className="group relative text-[15px] font-semibold text-brand-ink transition-colors hover:text-brand-blue">
               {label}
               <span className="absolute -bottom-1.5 left-0 h-0.5 w-0 rounded-full bg-brand-green transition-all duration-300 group-hover:w-full" />
             </a>
           ))}
-          <a href="#contacto" className={`${btnPrimary} px-5 py-2.5 text-sm`}>Diagnóstico gratis <ArrowUpRight size={16} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></a>
+          <a href="#contacto" className={`${btnPrimary} px-5 py-2.5 text-sm`}>Diagnóstico sin costo <ArrowUpRight size={16} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></a>
         </nav>
         <button
-          className={`rounded-full p-2 lg:hidden ${solid ? 'text-brand-navy' : 'text-white'}`}
+          className="rounded-full p-2 text-brand-navy lg:hidden"
           aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={open}
           onClick={() => setOpen(!open)}
@@ -148,44 +150,65 @@ function Header() {
           {navLinks.map(([label, href]) => (
             <a key={href} href={href} onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 text-lg font-semibold text-brand-ink hover:bg-brand-mist">{label}</a>
           ))}
-          <a href="#contacto" onClick={() => setOpen(false)} className={`${btnPrimary} mt-3`}>Solicitar diagnóstico <ArrowUpRight size={18} /></a>
+          <a href="#contacto" onClick={() => setOpen(false)} className={`${btnPrimary} mt-3`}>Solicitar diagnóstico sin costo <ArrowUpRight size={18} /></a>
         </nav>
       </div>
     </header>
   )
 }
 
+/* Navegación del menú: lleva cada sección exactamente debajo del header */
+function useAnchorScroll() {
+  useEffect(() => {
+    const onClick = (e: globalThis.MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]')
+      if (!link) return
+      const id = link.getAttribute('href')!.slice(1)
+      const target = id ? document.getElementById(id) : null
+      if (!target) return
+      e.preventDefault()
+      const top = id === 'inicio' ? 0 : target.getBoundingClientRect().top + window.scrollY - HEADER_H
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' })
+      history.replaceState(null, '', `#${id}`)
+    }
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [])
+}
+
 function Hero() {
   return (
-    <section id="inicio" className="relative overflow-hidden bg-brand-navy pt-28 text-white md:pt-36">
+    <section id="inicio" className="relative flex flex-col overflow-hidden bg-brand-navy pt-28 text-white md:pt-36 lg:min-h-[100svh] lg:pt-20">
       <div className="pointer-events-none absolute -right-40 -top-40 h-[560px] w-[560px] rounded-full bg-brand-blue/50 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-52 -left-40 h-[460px] w-[460px] rounded-full bg-brand-green/25 blur-3xl" />
 
-      <div className={`${wrap} relative grid items-center gap-14 pb-20 lg:grid-cols-12 lg:pb-28`}>
+      <div className={`${wrap} relative grid items-center gap-14 pb-20 lg:flex-1 lg:grid-cols-12 lg:gap-12 lg:py-[5vh]`}>
         <div className="lg:col-span-7">
-          <Reveal>
-            <span className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 backdrop-blur">
+          <Reveal immediate>
+            <span className="mb-7 inline-flex items-center gap-2 rounded-full lg:mb-[3vh] border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 backdrop-blur">
               <span className="h-2 w-2 animate-pulse rounded-full bg-brand-mint" /> Administración integral de condominios
             </span>
           </Reveal>
-          <Reveal delay={120}>
-            <h1 className="text-5xl font-extrabold leading-[1.04] tracking-tight sm:text-6xl lg:text-7xl">
-              Tu condominio, mejor administrado. <span className="text-brand-mint">Tu inversión, mejor cuidada.</span>
+          <Reveal immediate delay={120}>
+            <h1 className="text-5xl font-extrabold leading-[1.04] tracking-tight sm:text-6xl lg:text-[clamp(2.75rem,min(8vh,5.2vw),4.75rem)]">
+              Tu propiedad, mejor administrada. <span className="text-brand-mint">Tu inversión, mejor cuidada.</span>
             </h1>
           </Reveal>
-          <Reveal delay={240}>
-            <p className="mt-7 max-w-xl text-xl leading-relaxed text-white/75 md:text-2xl">
+          <Reveal immediate delay={240}>
+            <p className="mt-7 max-w-xl text-xl leading-relaxed text-white/75 md:text-2xl lg:mt-[3vh] lg:text-[clamp(1.125rem,2.7vh,1.5rem)]">
               Finanzas, mantenimiento, asesoría legal y seguridad en una sola gestión transparente.
             </p>
           </Reveal>
-          <Reveal delay={360}>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <a href="#contacto" className={btnPrimary}>Solicita tu diagnóstico gratis <ArrowUpRight size={18} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></a>
+          <Reveal immediate delay={360}>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row lg:mt-[4.5vh]">
+              <a href="#contacto" className={btnPrimary}>Solicita tu diagnóstico sin costo <ArrowUpRight size={18} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></a>
               <a href="#servicios" className={btnGhostLight}>Ver servicios <ArrowDown size={18} className="transition-transform group-hover:translate-y-0.5" /></a>
             </div>
           </Reveal>
-          <Reveal delay={480}>
-            <ul className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-base font-semibold text-white/80">
+          <Reveal immediate delay={480}>
+            <ul className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-base font-semibold text-white/80 lg:mt-[4.5vh]">
               {['Transparencia total', 'Respuesta inmediata', 'Valorización de tu inmueble'].map(t => (
                 <li key={t} className="flex items-center gap-2"><Check size={18} className="text-brand-mint" />{t}</li>
               ))}
@@ -193,9 +216,9 @@ function Hero() {
           </Reveal>
         </div>
 
-        <Reveal from="right" delay={200} className="lg:col-span-5">
+        <Reveal immediate from="right" delay={200} className="lg:col-span-5">
           <div className="relative">
-            <div className="h-[440px] overflow-hidden rounded-[2rem] shadow-2xl ring-1 ring-white/10 md:h-[560px]">
+            <div className="h-[440px] overflow-hidden rounded-[2rem] shadow-2xl ring-1 ring-white/10 md:h-[560px] lg:h-[min(560px,62vh)]">
               <img src="/images/gesic/edificio.jpg" alt="Condominio residencial administrado por GESIC" className="h-full w-full animate-kenburns object-cover motion-reduce:animate-none" fetchPriority="high" />
             </div>
             <div className="absolute -bottom-6 left-4 right-4 flex items-center gap-4 rounded-2xl bg-white p-5 text-brand-navy shadow-xl sm:left-auto sm:right-[-1.5rem] sm:w-80">
@@ -699,6 +722,7 @@ function WhatsAppButton() {
 }
 
 export default function App() {
+  useAnchorScroll()
   return (
     <>
       <Header />
