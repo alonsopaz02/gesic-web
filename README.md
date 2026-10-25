@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # GESIC Perú — landing page
 
 Landing page corporativa desarrollada con React, TypeScript, Vite y Tailwind CSS, preparada para publicarse en Cloudflare Pages.
@@ -136,3 +137,6 @@ gesic-web/
 ```
 
 Nota: se incluyen carpetas `components/` y `assets/` para organizar futuras extracciones de componentes y recursos; la implementación inicial mantiene las secciones en `App.tsx` y el contenido editable en `src/data/content.ts`.
+=======
+# gesiclandingweb
+>>>>>>> 1bcbea6bef8828489f325f47a3ada0b0763bc9cf
